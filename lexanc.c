@@ -14,12 +14,10 @@ EID: js96986
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -41,9 +39,31 @@ EID: js96986
 void skipblanks ()
   {
       int c;
+      int cNext; 
       while ((c = peekchar()) != EOF
-             && (c == ' ' || c == '\n' || c == '\t'))
-          getchar();
+             && (c == ' ' || c == '\n' || c == '\t' //whitespace
+             || c == '{' || (c == '(' && (cNext = peek2char()) == '*'))) // comment
+      {
+        if(c == '{'){
+            do{
+                getchar();
+            }while ((c = peekchar()) != EOF && c != '}');
+        }else if(c == '('){
+				    getchar();
+            do{
+                getchar();
+                c = cNext;
+                cNext = peek2char();
+            }while (cNext != EOF 
+                       && (c != '*' || cNext != ')'));
+            getchar();
+            c = cNext;
+        } 
+        if(c != EOF)
+            getchar();
+
+      }      
+        
     }
 
 /* Get identifiers and reserved words */
@@ -75,4 +95,3 @@ TOKEN number (TOKEN tok)
     tok->intval = num;
     return (tok);
   }
-
