@@ -35,10 +35,6 @@ EID: js96986
    12345 123    345  357
    */
 
-
-
-
-
 /* Skip blanks and whitespace.  Expand this function to skip comments too. */
 void skipblanks ()
   {
@@ -112,7 +108,6 @@ TOKEN identifier (TOKEN tok)
 		isReserved=1;
         tok->tokentype = RESERVED;
         tok->whichval = i + 1;
-        return tok;
       }
     }
 
@@ -122,7 +117,6 @@ TOKEN identifier (TOKEN tok)
 		isReserved=1;
         tok->tokentype = OPERATOR;
         tok->whichval = i + (OR - OPERATOR_BIAS) - 1;
-        return tok;
       }
     }
 
@@ -130,14 +124,42 @@ TOKEN identifier (TOKEN tok)
 	if(hasNumeric == 1 || isReserved==0){
 		tok->tokentype = IDENTIFIERTOK;
    		strncpy(tok->stringval, word, 16); // should this be 15 or 16?
-    	return tok;
 	}
+	return (tok);
 
   }
 
 TOKEN getstring (TOKEN tok)
   {
-    }
+    getchar();
+	int c = peekchar();
+	int cNext = peek2char();
+	int lenght = 0; 
+	char word[16]; 
+
+	while(c != EOF){
+		if(c == '\'') {	
+			if(cNext == '\'')
+				getchar(); 
+			else break;
+		}
+		
+		if(lenght < 15)
+			word[lenght++] = getchar();
+		else getchar();
+		
+		c = peekchar();
+		cNext = peek2char();
+		}
+
+		getchar();
+		word[lenght] = '\0';
+
+		tok->tokentype = STRINGTOK;
+    	strncpy(tok->stringval, word, 16); 
+    	return (tok);
+}
+    
 
 TOKEN special (TOKEN tok)
   {
