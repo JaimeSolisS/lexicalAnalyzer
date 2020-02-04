@@ -35,6 +35,10 @@ EID: js96986
    12345 123    345  357
    */
 
+
+
+
+
 /* Skip blanks and whitespace.  Expand this function to skip comments too. */
 void skipblanks ()
   {
@@ -45,31 +49,91 @@ void skipblanks ()
              || c == '{' || (c == '(' && (cNext = peek2char()) == '*'))) // comment
       {
         if(c == '{'){
-            do{
-                getchar();
-            }while ((c = peekchar()) != EOF && c != '}');
+        	while (1){
+            	getchar();
+            	if (!((c = peekchar()) != EOF && c != '}'))
+              		break; 
+          	}
+        
         }else if(c == '('){
-				    getchar();
-            do{
-                getchar();
-                c = cNext;
-                cNext = peek2char();
-            }while (cNext != EOF 
-                       && (c != '*' || cNext != ')'));
+			getchar();
+            while (1){
+            	getchar();
+              	c = cNext; 
+              	cNext = peek2char();
+              	if (!(cNext != EOF && (c != '*' || cNext != ')')))
+                	break;
+            }
             getchar();
             c = cNext;
         } 
         if(c != EOF)
-            getchar();
-
+        	getchar();
       }      
-        
     }
 
 /* Get identifiers and reserved words */
 TOKEN identifier (TOKEN tok)
   {
+    int c;
+    int hasNumeric = 0;
+	int isReserved=0; 
+	int lenght = 0;
+	char word[16];
+
+	const char* operators[] = {"and", "or", "not", "div", "mod", "in"};
+    const char* reserved[] = { "array", "begin", "case", "const", "do",
+                                  "downto", "else", "end", "file", "for",
+                                  "function", "goto", "if", "label", "nil",
+                                  "of", "packed", "procedure", "program", "record",
+                                  "repeat", "set", "then", "to", "type",
+                                  "until", "var", "while", "with"
+							};
+
+	while(1){
+    	word[lenght++] = getchar();
+		c = peekchar();
+		if(CHARCLASS[c] == NUMERIC)
+	    	hasNumeric = 1;
+		if (!(c != EOF && lenght < 15 && (CHARCLASS[c] == ALPHA || CHARCLASS[c] == NUMERIC)) )
+			break; 
     }
+		
+	while(c != EOF && (CHARCLASS[c] == ALPHA || CHARCLASS[c] == NUMERIC)) {
+		getchar();				
+		c = peekchar();
+	}
+	
+	word[lenght] = '\0'; //end of word
+		
+    // Reserved words 
+    for(int i = 0; i < 29; i++) {
+      if(strcmp(word, reserved[i]) == 0) {
+		isReserved=1;
+        tok->tokentype = RESERVED;
+        tok->whichval = i + 1;
+        return tok;
+      }
+    }
+
+	// Worded operators 
+    for(int i = 0; i < 6; i++) {
+      if(strcmp(word, operators[i]) == 0) {
+		isReserved=1;
+        tok->tokentype = OPERATOR;
+        tok->whichval = i + (OR - OPERATOR_BIAS) - 1;
+        return tok;
+      }
+    }
+
+	// identifier has a numeric -> No reserved
+	if(hasNumeric == 1 || isReserved==0){
+		tok->tokentype = IDENTIFIERTOK;
+   		strncpy(tok->stringval, word, 16); // should this be 15 or 16?
+    	return tok;
+	}
+
+  }
 
 TOKEN getstring (TOKEN tok)
   {
