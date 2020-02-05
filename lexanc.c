@@ -163,7 +163,58 @@ TOKEN getstring (TOKEN tok)
 
 TOKEN special (TOKEN tok)
   {
+	
+	char cspecial[3];
+	int i;
+    char c, cclass;
+
+	const char* Soperators[] = {"+", "-", "*", "/", ":=", "=", "<>", "<", "<=", ">=", ">", "^", "."};
+    const char* Sdelimeters[] = { ",", ";", ":", "(", ")", "[", "]", ".."};
+
+
+    for(i = 0; i < 3; i++) {
+      c = peekchar();
+      cclass = CHARCLASS[c];
+      
+        if(cclass == SPECIAL) {
+          cspecial[i] = getchar();
+          if(cspecial[i] == ':' && peekchar() == '=')
+            cspecial[++i] = getchar();
+          else if(cspecial[i] == '<' && (peekchar() == '>' || peekchar() == '='))
+            cspecial[++i] = getchar();
+          else if(cspecial[i] == '>' && peekchar() == '=')
+            cspecial[++i] = getchar();
+          else if(cspecial[i] == '.' && peekchar() == '.')
+            cspecial[++i] = getchar();
+          i++;
+          break;
+        }
+        else break;
+      
     }
+    cspecial[i] = '\0';
+	
+
+
+
+	/* Delimeters */
+    for(int i = 0; i < 8; i++) {
+      if(strcmp(cspecial,Sdelimeters[i]) == 0) {
+        tok->tokentype = DELIMITER;
+        tok->whichval = i + 1;
+      }
+    }
+
+    /* Operators */
+    for(int i = 0; i < 13; i++) {
+      if(strcmp(cspecial,Soperators[i]) == 0) {
+        tok->tokentype = OPERATOR;
+        tok->whichval = i + 1;
+      }
+    }
+	return (tok);
+
+  }
 
 /* Get and convert unsigned numbers of all types. */
 TOKEN number (TOKEN tok)
