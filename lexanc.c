@@ -127,7 +127,7 @@ TOKEN identifier (TOKEN tok)
 	}
 	return (tok);
 
-  }
+}
 
 TOKEN getstring (TOKEN tok)
   {
@@ -159,20 +159,20 @@ TOKEN getstring (TOKEN tok)
     	strncpy(tok->stringval, word, 16); 
     	return (tok);
 }
-    
 
 TOKEN special (TOKEN tok)
   {
 	
 	char cspecial[3];
+    char c;
+	char cclass;
 	int i;
-    char c, cclass;
 
 	const char* Soperators[] = {"+", "-", "*", "/", ":=", "=", "<>", "<", "<=", ">=", ">", "^", "."};
     const char* Sdelimeters[] = { ",", ";", ":", "(", ")", "[", "]", ".."};
 
 
-    for(i = 0; i < 3; i++) {
+    for(i = 0; i < 4; i++) {
       c = peekchar();
       cclass = CHARCLASS[c];
       
@@ -193,11 +193,8 @@ TOKEN special (TOKEN tok)
       
     }
     cspecial[i] = '\0';
-	
 
-
-
-	/* Delimeters */
+	// Delimeters 
     for(int i = 0; i < 8; i++) {
       if(strcmp(cspecial,Sdelimeters[i]) == 0) {
         tok->tokentype = DELIMITER;
@@ -205,7 +202,7 @@ TOKEN special (TOKEN tok)
       }
     }
 
-    /* Operators */
+    // Operators 
     for(int i = 0; i < 13; i++) {
       if(strcmp(cspecial,Soperators[i]) == 0) {
         tok->tokentype = OPERATOR;
