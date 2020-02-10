@@ -37,13 +37,13 @@ EID: js96986
 
 /* Skip blanks and whitespace.  Expand this function to skip comments too. */
 void skipblanks ()
-  {
-      int c;
-      int cNext; 
-      while ((c = peekchar()) != EOF
+{
+    int c;
+  	int cNext; 
+    while ((c = peekchar()) != EOF
              && (c == ' ' || c == '\n' || c == '\t' //whitespace
              || c == '{' || (c == '(' && (cNext = peek2char()) == '*'))) // comment
-      {
+    {
         if(c == '{'){
         	while (1){
             	getchar();
@@ -65,8 +65,8 @@ void skipblanks ()
         } 
         if(c != EOF)
         	getchar();
-      }      
-    }
+    }      
+}
 
 /* Get identifiers and reserved words */
 TOKEN identifier (TOKEN tok)
@@ -126,7 +126,6 @@ TOKEN identifier (TOKEN tok)
    		strncpy(tok->stringval, word, 16); // should this be 15 or 16?
 	}
 	return (tok);
-
 }
 
 TOKEN getstring (TOKEN tok)
@@ -150,19 +149,18 @@ TOKEN getstring (TOKEN tok)
 		
 		c = peekchar();
 		cNext = peek2char();
-		}
+	}
 
-		getchar();
-		word[lenght] = '\0';
+	getchar();
+	word[lenght] = '\0';
 
-		tok->tokentype = STRINGTOK;
-    	strncpy(tok->stringval, word, 16); 
-    	return (tok);
+	tok->tokentype = STRINGTOK;
+	strncpy(tok->stringval, word, 16); 
+    return (tok);
 }
 
 TOKEN special (TOKEN tok)
-  {
-	
+  {	
 	char cspecial[3];
     char c;
 	char cclass;
@@ -170,7 +168,6 @@ TOKEN special (TOKEN tok)
 
 	const char* Soperators[] = {"+", "-", "*", "/", ":=", "=", "<>", "<", "<=", ">=", ">", "^", "."};
     const char* Sdelimeters[] = { ",", ";", ":", "(", ")", "[", "]", ".."};
-
 
     for(i = 0; i < 4; i++) {
       c = peekchar();
@@ -213,19 +210,160 @@ TOKEN special (TOKEN tok)
 
   }
 
+  	// Create look-up tables for decimal conversions, populated inside TOKEN number
+	int isPDC =0; 
+	double posdc[100];
+	int isNDC= 0; 
+	double negdc[100];
+
 /* Get and convert unsigned numbers of all types. */
 TOKEN number (TOKEN tok)
-  { long num;
+  { 
     int  c, charval;
-    num = 0;
-    while ( (c = peekchar()) != EOF
-            && CHARCLASS[c] == NUMERIC)
-      {   c = getchar();
-          charval = (c - '0');
-          num = num * 10 + charval;
+	long intNum = 0; // int values
+    double doubleNum = 0; // double values -> 10 digits
+	int expNum = 0; // value of exponent
+
+	int intCounter= 0; //Counter before decimal point
+	int decimalCounter = 1; //decimal conversion counter
+	int exponentCounter = 0; //exponent counter
+
+	// 1 true, 0 false
+	int nonZero = 0;  
+	int intError = 0;  
+	int isReal = 0; //double 
+	int expPos = 1; // positive
+	int floatError = 0; 
+
+	// Integer numbers
+    while ( (c = peekchar()) != EOF && CHARCLASS[c] == NUMERIC)
+      {  
+		c = getchar();
+        charval = (c - '0');
+        intNum = intNum * 10 + charval; //MAGIC Formula
+		if(charval != 0){
+			nonZero = 1;
+			if(intCounter >= 8)  //From Int to Double type
+				charval = 0;
+			doubleNum = doubleNum * 10 + charval;
+			intCounter++;
+		}
+    }
+
+	exponentCounter = intCounter - 1; //always one minus the int counter to float format
+
+	 // int error 
+    if(intCounter > 10 || intNum < 0 || intNum > 2147483647) // Catch Integer number out of range
+		intError = 1; 
+
+	//Decimal conversion 
+	if (isPDC==0){ //Create positive array
+		posdc[0] = 1;
+		for(int i=1; i < 100; i++)
+			posdc[i] = posdc[i-1] * 10;
+		isPDC=1; 
+	}
+
+	if (isNDC==0){ //Create negative array
+		negdc[0] = 1;
+		for(int i=1; i < 100; i++)
+			negdc[i] = negdc[i-1] * .1;
+		isNDC=1; 
+		} 
+
+	// After decimal point
+    if((c = peekchar()) == '.' && CHARCLASS[peek2char()] == NUMERIC)
+	{
+        getchar(); //ignore '.' 
+		isReal = 1;
+		double dcharval;
+
+		while ( (c = peekchar()) != EOF && CHARCLASS[c] == NUMERIC)
+		{  
+			c = getchar();
+			dcharval = (c - '0');
+
+			if(dcharval != 0){
+				nonZero = 1;
+			}
+			if(nonZero == 0){ //if zero, move decimal point to right for x.e^-y  
+				exponentCounter--;
+			}
+			 /* 
+			 for(int i = 0; i <= decimalCounter++; i++)
+						dcharval *= .1;
+			 Took too long, used look up tables instead  */
+			dcharval *= negdc[decimalCounter++]; //turn dcharval to decimal equivalent
+			
+			if(nonZero == 1 && intCounter < 8){ //Just care for8 significant digits
+				intCounter++;
+				doubleNum += dcharval;
+			}
+		}
+	}
+	
+	if(exponentCounter > 0){
+		doubleNum *= negdc[exponentCounter]; //transform to e notation
+	}
+	else if(exponentCounter < 0){
+		doubleNum *= posdc[-exponentCounter];
+	}
+	// read exponent
+	if((c = peekchar()) == 'e') 
+	{
+		getchar(); // ignore  'e'
+		isReal = 1;
+		nonZero =0;
+		intCounter =0;
+			
+		c = peekchar();
+		if(c == '+'){
+			getchar(); //ignore '+'
+		} else if(c == '-'){
+			getchar(); //ignore '-'
+			expPos = 0;
+		}
+			
+			
+		// exponent value
+		while ( (c = peekchar()) != EOF && CHARCLASS[c] == NUMERIC)
+        {   
+			c = getchar();
+            charval = (c - '0');
+			if(charval != 0)
+			    nonZero = 1;
+			if(nonZero == 1)
+				expNum = expNum * 10 + charval;
         }
+        
+        if(expNum < 0)
+			floatError = 1;
+    	if(expPos == 0)
+			expNum = -expNum;
+	}
+
     tok->tokentype = NUMBERTOK;
-    tok->basicdt = INTEGER;
-    tok->intval = num;
+
+    if(isReal == 0){
+		if(intError == 1){
+	        printf("Integer number out of range\n");
+	    }
+        tok->basicdt = INTEGER;
+        tok->intval = intNum;
+	}else{
+		expNum += exponentCounter; //  exponent value	  
+		if(expNum > 38 || expNum < -38 ||  floatError == 1){
+	        doubleNum = 0;
+	        printf("Floating number out of range\n");
+	    }else{
+		    if(expNum > 0) //positive
+				doubleNum *= posdc[expNum];
+			else if(expNum < 0) //negative
+				doubleNum *= negdc[-expNum];
+	      	}
+		tok->basicdt = REAL;
+		tok->realval = doubleNum;
+	}
     return (tok);
-  }
+}
+
